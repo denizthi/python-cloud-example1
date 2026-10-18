@@ -30,14 +30,16 @@ def new_user():
 
 @app.route("/login", methods=["POST"])
 def login():
-    json_cred = request.get_json(silent=True)
-    
+    credentials = request.get_json(silent=True) or {}
+    email = credentials.get("email", "")
+    password = credentials.get("password", "")
+    l_user = {"email": email, "password": password}
     try:
-        r = requests.post((str(SERVER_C_URL) + "/login"), json=json_cred)
+        r = requests.post((str(SERVER_C_URL) + "/login"), json=l_user)
     except requests.RequestException:
             return jsonify(error="Cannot reach Server C")
 
-    return r.content
+    return r.json()
 
 @app.route("/posts", methods=["GET"])
 def get_posts():
