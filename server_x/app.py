@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import psycopg
 
 load_dotenv()
-database_url = os.environ["DATABASE_URL"]
+database_url = os.environ["DATABASE_URL_X"]
 server_c_url = os.environ["C_URL"]
 
 app = Flask(__name__)
