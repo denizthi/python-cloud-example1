@@ -1,14 +1,15 @@
-from flask import Flask, request, jsonify
+
 import os
 import requests
+from flask import Flask, request, jsonify
+from database import SessionLocal
 from dotenv import load_dotenv
-import psycopg
-
-load_dotenv()
-database_url = os.environ["DATABASE_URL_Y"]
-server_c_url = os.environ["C_URL"]
+from models import PostsY
 
 app = Flask(__name__)
+load_dotenv()
+SERVER_C_URL = os.getenv("C_URL")
+
 
 @app.route('/status')
 def status():
@@ -16,23 +17,23 @@ def status():
 
 @app.route("/new_user", methods=["POST"])
 def new_user():
-    json_cred = request.get_json(silent=True)
-
-    user = seed.create_user(user)
-    
+    credentials = request.get_json(silent=True) or {}
+    email = credentials.get("email", "")
+    password = credentials.get("password", "")
+    n_user = {"email": email, "password": password}
     try:
-        r = requests.post((str(server_c_url) + "/new_user"), json=json_cred)
+        r = requests.post((str(SERVER_C_URL) + "/new_user"), json=n_user)
     except requests.RequestException:
             return jsonify(error="Cannot reach Server C")
 
-    return r.content
+    return r.json()
 
 @app.route("/login", methods=["POST"])
 def login():
     json_cred = request.get_json(silent=True)
     
     try:
-        r = requests.post((str(server_c_url) + "/login"), json=json_cred)
+        r = requests.post((str(SERVER_C_URL) + "/login"), json=json_cred)
     except requests.RequestException:
             return jsonify(error="Cannot reach Server C")
 
@@ -40,24 +41,15 @@ def login():
 
 @app.route("/posts", methods=["GET"])
 def get_posts():
-    try:
-        with psycopg.connect(database_url) as conn:
-            data = conn.execute("""
-                SELECT post_id, account_id, time_created, post
-                FROM posts_y
-                ORDER BY post_id
-                """).fetchall()
-    except psycopg.Error:
-        return jsonify(error="Cannot load posts.")
-
+    db = SessionLocal()
+    data = db.query(PostsY).all()
     posts_y = [{
-            "post_id": k[0],
-            "account_id": k[1],
-            "time_created": k[2],
-            "post": k[3]}
-        for k in data]
-
-    return jsonify(posts=posts_y)
+            "post_id": k.post_id,
+            "account_id": k.account_id,
+            "time_created": k.time_created,
+            "post": k.post}
+        for k in data]     
+    return jsonify(posts_y=posts_y)    
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

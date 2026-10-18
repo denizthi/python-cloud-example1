@@ -1,0 +1,1 @@
+py -m flask --app app run --debug --port 5002

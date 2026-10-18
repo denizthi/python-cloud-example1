@@ -66,6 +66,9 @@ def login(email: str, password: str) -> LoginResponse:
     db=SessionLocal()
     account = db.query(Account).filter_by(email=email).first()
 
+    if not account:
+        return LoginResponse(error_message="User does not exist")
+
     if not check_password_hash(account.password_hash, password):
         return LoginResponse(error_message="Check your email and password")
 

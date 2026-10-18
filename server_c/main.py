@@ -33,13 +33,13 @@ def new_user():
     if new_user.has_error():
         return jsonify(message=new_user.error_message)
 
-    return jsonify(message="Please check your email for the verification link", account_id=str(new_user.account_id))
+    return jsonify(message="Please check your email for the verification link", account_id=str(new_user.account_id)), 200
 
 @app.route("/verify/<token>")
 def verify_email(token): 
     email = confirm_token(token)
     if not email:
-        return "Invalid or expired verification link."
+        return "Invalid or expired verification link.", 401
     
     db = SessionLocal()
 
@@ -59,11 +59,11 @@ def logged_user():
 
     user = login(email, password)
     if user.has_error():
-        return jsonify(message=user.error_message)
+        return jsonify(message=user.error_message), 401
 
     log_token = create_access_token(identity=user.account_id)
 
-    return jsonify(message="Login successful", log_token=log_token)
+    return jsonify(message="Login successful", log_token=log_token), 200
 
 
 if __name__ == '__main__':
