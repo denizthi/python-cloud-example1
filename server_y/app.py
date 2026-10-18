@@ -1,15 +1,20 @@
+# app.py
+
+#resource: https://blog.appsignal.com/2025/04/30/using-jwts-in-python-flask-rest-framework.html
 
 import os
 import requests
 from flask import Flask, request, jsonify
 from database import SessionLocal
 from dotenv import load_dotenv
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from models import PostsY
+from config import SERVER_C_URL 
 
 app = Flask(__name__)
 load_dotenv()
-SERVER_C_URL = os.getenv("C_URL")
-
+app.config.from_pyfile("config.py")
+jwt = JWTManager(app)
 
 @app.route('/status')
 def status():
@@ -42,6 +47,7 @@ def login():
     return r.json()
 
 @app.route("/posts", methods=["GET"])
+@jwt_required()
 def get_posts():
     db = SessionLocal()
     data = db.query(PostsY).all()
@@ -53,5 +59,8 @@ def get_posts():
         for k in data]     
     return jsonify(posts_y=posts_y)    
 
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
+
