@@ -3,7 +3,8 @@
 import os
 from dotenv import load_dotenv
 from flask_mail import Mail
-
+from datetime import timedelta
+ 
 mail = Mail()
 
 load_dotenv()
@@ -17,3 +18,6 @@ MAIL_USE_SSL = False
 MAIL_USERNAME = os.getenv("MAIL_USERNAME")
 MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
 MAIL_DEFAULT_SENDER = "no-reply@demomailtrap.co"
+
+JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)
+JWT_REFRESH_TOKEN_EXPIRES = timedelta(hours=3)    

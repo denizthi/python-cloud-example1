@@ -19,6 +19,9 @@ class PostsX(Base):
     likes = relationship("LikesX", back_populates="post")
     reactions = relationship("ReactionsX", back_populates="post")
 
+    def to_dict(self):
+        return {"post_id": self.post_id, "account_id": self.account_id,  "time_created": self.time_created, "post": self.post}
+
 class CommentsX(Base):
     __tablename__ = "comments_x"
 

@@ -2,16 +2,14 @@
 
 # resource: https://blog.appsignal.com/2025/04/30/using-jwts-in-python-flask-rest-framework.html
 
-import os
-import json
 import requests
 from flask import Flask, request, jsonify
 from database import SessionLocal
 from dotenv import load_dotenv
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token
 from models import PostsY, LikesY, CommentsY
 from config import SERVER_C_URL
-from interactions import like_post, comment_post, react_post
+from interactions import like_post, comment_post, react_post, create_post
 
 app = Flask(__name__)
 load_dotenv()
@@ -37,7 +35,6 @@ def new_user():
 
     return r.json()
 
-
 @app.route("/login", methods=["POST"])
 def login():
     credentials = request.get_json(silent=True) or {}
@@ -51,6 +48,12 @@ def login():
 
     return r.json()
 
+@app.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh_user():
+    current_user = get_jwt_identity()
+    new_access_token = create_access_token(identity=current_user, fresh=False)
+    return jsonify(access_token=new_access_token), 200
 
 @app.route("/posts", methods=["GET"])
 @jwt_required()
@@ -60,6 +63,17 @@ def get_posts():
     posts_y = [k.to_dict() for k in data]
     return jsonify(posts_y=posts_y)
 
+@app.route("/posts", methods=["POST"])
+@jwt_required()
+def create_a_post():
+    post_info = request.get_json(silent=True) or {}
+    current_user = get_jwt_identity()
+    post = post_info.get("post", "")
+
+    created = create_post(account_id=current_user, post=post)
+    if created.error_message:
+        return jsonify(message=created.error_message)
+    return jsonify(message='Post saved', post=post)
 
 @app.route("/likes", methods=["POST"])
 @jwt_required()
@@ -75,7 +89,6 @@ def like_a_post():
     db = SessionLocal()
     number_of_likes = db.query(LikesY).filter_by(post_id=post_id).count()
     return jsonify(message='Post liked', number_of_likes=number_of_likes)
-
 
 @app.route("/comments", methods=["POST"])
 @jwt_required()
@@ -100,7 +113,6 @@ def comment_a_post():
         for k in comments]
 
     return jsonify(message='Comment saved', post=post.to_dict(), comments=comments_post)
-
 
 @app.route("/reactions", methods=["POST"])
 @jwt_required()

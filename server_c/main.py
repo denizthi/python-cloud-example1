@@ -6,7 +6,7 @@ from user_services import create_user, login
 from config import mail
 from models import Account
 
-from flask_jwt_extended import JWTManager, create_access_token
+from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token
 
 app = Flask(__name__)
 app.config.from_pyfile("config.py")
@@ -56,9 +56,9 @@ def logged_user():
     if user.has_error():
         return jsonify(message=user.error_message), 401
 
-    log_token = create_access_token(identity=user.account_id)
-
-    return jsonify(message="Login successful", log_token=log_token), 200
+    log_token = create_access_token(identity=user.account_id, fresh=True)
+    refresh_token = create_refresh_token(identity=user.account_id)
+    return jsonify(message="Login successful", log_token=log_token, refresh_token=refresh_token), 200
 
 
 if __name__ == '__main__':
