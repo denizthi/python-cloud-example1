@@ -4,12 +4,12 @@ import uuid
 
 from dataclasses import dataclass
 
-from flask import request, jsonify, url_for
+from flask import url_for
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import create_access_token
+
 from database import SessionLocal
 from models import Account
-from email_verif import generate_token, confirm_token, send_verification_email
+from email_verif import generate_token, send_verification_email
 
 @dataclass
 class CreateUserResponse:
@@ -58,7 +58,6 @@ def create_user(email: str, password: str) -> CreateUserResponse:
 
     return CreateUserResponse(account_id=account_id, verify_url=verify_url)
 
-#@app.route('/login', methods=['POST'])
 def login(email: str, password: str) -> LoginResponse:
     if not email or not password:
         return LoginResponse(error_message="Check your email and password")

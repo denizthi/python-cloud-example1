@@ -1,13 +1,8 @@
 from flask import Flask, request, jsonify
-from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.exc import IntegrityError
 from database import SessionLocal
-import os
-import uuid
 
-import user_services
-
-from user_services import create_user, confirm_token, login
+from email_verif import confirm_token
+from user_services import create_user, login
 from config import mail
 from models import Account
 
