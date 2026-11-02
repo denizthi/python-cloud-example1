@@ -56,9 +56,10 @@ def logged_user():
     if user.has_error():
         return jsonify(message=user.error_message), 401
 
-    log_token = create_access_token(identity=user.account_id, fresh=True)
-    refresh_token = create_refresh_token(identity=user.account_id)
-    return jsonify(message="Login successful", log_token=log_token, refresh_token=refresh_token), 200
+    headers = {"issuer": "server_c"}
+
+    log_token = create_access_token(identity=user.account_id, additional_headers=headers)
+    return jsonify(message="Login successful", log_token=log_token), 200
 
 
 if __name__ == '__main__':

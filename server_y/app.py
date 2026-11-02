@@ -6,10 +6,11 @@ import requests
 from flask import Flask, request, jsonify
 from database import SessionLocal
 from dotenv import load_dotenv
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token, create_refresh_token
 from models import PostsY, LikesY, CommentsY
 from config import SERVER_C_URL
 from interactions import like_post, comment_post, react_post, create_post
+from auth import login_on_c
 
 app = Flask(__name__)
 load_dotenv()
@@ -40,13 +41,10 @@ def login():
     credentials = request.get_json(silent=True) or {}
     email = credentials.get("email", "")
     password = credentials.get("password", "")
-    l_user = {"email": email, "password": password}
-    try:
-        r = requests.post((str(SERVER_C_URL) + "/login"), json=l_user)
-    except requests.RequestException:
-        return jsonify(error="Cannot reach Server C")
-
-    return r.json()
+    current_user = login_on_c(email, password)
+    app_token = create_access_token(identity=current_user, fresh=True)
+    refresh_token = create_refresh_token(identity=current_user)
+    return jsonify(message="Login successful", app_token=app_token, refresh_token=refresh_token), 200
 
 @app.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)

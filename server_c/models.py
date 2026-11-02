@@ -1,10 +1,11 @@
 # app/models.py
 import uuid
 
-from sqlalchemy import Column, String, Text, UniqueConstraint, Boolean, DateTime
+from sqlalchemy import  Column, String, Text, Integer, UniqueConstraint, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from database import Base
+from sqlalchemy.orm import relationship
 
 class Account(Base):
     __tablename__ = "accounts"
@@ -17,5 +18,10 @@ class Account(Base):
     password_hash = Column(Text, nullable=False)
     is_verified = Column(Boolean, nullable=False, default=False)
     time_created = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    
 
+class Role(Base):
+    __tablename__ = "role"
 
+    role_id = Column(Integer, primary_key=True)
+    role_name = Column(String(80), unique=True, nullable=False)
