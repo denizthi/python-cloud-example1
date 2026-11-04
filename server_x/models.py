@@ -30,6 +30,7 @@ class CommentsX(Base):
     account_id = Column(UUID(as_uuid=True), nullable=False)
     time_commented = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     text = Column(Text, nullable=False)
+    synced_from = Column(Text)
 
     post = relationship("PostsX", back_populates="comments")
 
@@ -40,6 +41,7 @@ class LikesX(Base):
     post_id = Column(BigInteger, ForeignKey("posts_x.post_id", name="post_id_c"), nullable=False)
     account_id = Column(UUID(as_uuid=True), nullable=False)
     time_liked = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    synced_from = Column(Text)
 
     post = relationship("PostsX", back_populates="likes")
 
@@ -51,6 +53,7 @@ class ReactionsX(Base):
     account_id = Column(UUID(as_uuid=True), nullable=False)
     time_reaction = Column(DateTime(timezone=True),server_default=func.now(), nullable=False)
     reaction_text = Column(Text, nullable=False)
+    synced_from = Column(Text)
 
     post = relationship("PostsX", back_populates="reactions")
 

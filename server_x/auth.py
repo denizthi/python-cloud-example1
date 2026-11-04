@@ -25,10 +25,8 @@ def login_on_c(email: str, password: str) -> LoginServerC:
         r = requests.post((str(SERVER_C_URL) + "/login"), json=l_user)
     except requests.RequestException:
         return LoginServerC(error_message="Cannot reach Server C")
-    log_token = r.json().get("log_token", "")
-    current_user = pyjwt.decode(log_token, JWT_C, "HS256").get("sub", "")
-    print(log_token)
-    return current_user
+    
+    return r.json()
     
     #app_token = create_access_token(identity=current_user, fresh=True)
     #refresh_token = create_refresh_token(identity=current_user)

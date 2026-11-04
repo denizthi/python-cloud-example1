@@ -2,16 +2,14 @@
 
 # resource: https://blog.appsignal.com/2025/04/30/using-jwts-in-python-flask-rest-framework.html
 
-import os
 import requests
 from flask import Flask, request, jsonify
 from database import SessionLocal
 from dotenv import load_dotenv
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token, create_refresh_token, decode_token
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token, create_refresh_token, decode_token, get_jwt
 from models import PostsX, LikesX, CommentsX
 from config import SERVER_C_URL
 from interactions import like_post, comment_post, react_post, create_post
-from auth import login_on_c
 
 app = Flask(__name__)
 load_dotenv()
@@ -42,10 +40,13 @@ def login():
     credentials = request.get_json(silent=True) or {}
     email = credentials.get("email", "")
     password = credentials.get("password", "")
-    current_user = login_on_c(email, password)
-    app_token = create_access_token(identity=current_user, fresh=True)
-    refresh_token = create_refresh_token(identity=current_user)
-    return jsonify(message="Login successful", app_token=app_token, refresh_token=refresh_token), 200
+    l_user = {"email": email, "password": password, "sender": "server_x"}
+    try:
+        r = requests.post((str(SERVER_C_URL) + "/login"), json=l_user)
+    except requests.RequestException:
+        return jsonify(error="Cannot reach Server C")
+        
+    return r.json()
 
 @app.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
@@ -57,6 +58,10 @@ def refresh_user():
 @app.route("/posts", methods=["GET"])
 @jwt_required()
 def get_posts():
+    checking_jwt = get_jwt()
+    if checking_jwt.get("scope") != "application":
+        return jsonify(error= "Requires application token"), 403
+    
     db = SessionLocal()
     data = db.query(PostsX).all()
     posts_x = [k.to_dict() for k in data]
@@ -65,6 +70,10 @@ def get_posts():
 @app.route("/posts", methods=["POST"])
 @jwt_required()
 def create_a_post():
+    checking_jwt = get_jwt()
+    if checking_jwt.get("scope") != "application":
+        return jsonify(error= "Requires application token"), 403
+    
     post_info = request.get_json(silent=True) or {}
     current_user = get_jwt_identity()
     post = post_info.get("post", "")
@@ -77,6 +86,10 @@ def create_a_post():
 @app.route("/likes", methods=["POST"])
 @jwt_required()
 def like_a_post():
+    checking_jwt = get_jwt()
+    if checking_jwt.get("scope") != "application":
+        return jsonify(error= "Requires application token"), 403
+    
     like_info = request.get_json(silent=True) or {}
     post_id = like_info.get("post_id", "")
     current_user = get_jwt_identity()
@@ -92,6 +105,10 @@ def like_a_post():
 @app.route("/comments", methods=["POST"])
 @jwt_required()
 def comment_a_post():
+    checking_jwt = get_jwt()
+    if checking_jwt.get("scope") != "application":
+        return jsonify(error= "Requires application token"), 403
+    
     comment_info = request.get_json(silent=True) or {}
     post_id = comment_info.get("post_id", "")
     text = comment_info.get("text", "")
@@ -116,6 +133,10 @@ def comment_a_post():
 @app.route("/reactions", methods=["POST"])
 @jwt_required()
 def react_a_post():
+    checking_jwt = get_jwt()
+    if checking_jwt.get("scope") != "application":
+        return jsonify(error= "Requires application token"), 403
+    
     rxn_info = request.get_json(silent=True) or {}
     post_id = rxn_info.get("post_id", "")
     text = rxn_info.get("reaction_text", "")
@@ -128,6 +149,69 @@ def react_a_post():
 
     return jsonify(message='Reaction saved')
 
+@app.route("/new_endpoint_going_to_y", methods=["POST"])
+@jwt_required()
+def request_cloud():
+    checking_jwt = get_jwt()
+    if checking_jwt.get("scope") != "application":
+        return jsonify(error= "Requires application token"), 403
+    if checking_jwt.get("sender") != "server_x":
+        return jsonify(error= "Wrong sender"), 403
+
+    http_header = request.headers
+    if not "cloud-token" in http_header:
+        return jsonify(error= "Requires cloud token"), 403
+    cloud_token = http_header.get("cloud-token")
+    
+    # 1. Extract clkoud_token from Header of the request
+    # 2. Create reqeuest with authorization header using cloud_token only
+    data = request.get_json(silent=True) or {}
+    
+    try:
+        headers = {"Authorization": f"Bearer {cloud_token}"}
+        r = requests.post((str(SERVER_C_URL) + "/sync"), json=data, timeout=10, headers=headers)
+    except requests.RequestException:
+        return jsonify(error="Cannot reach Server C")
+    
+    return r.json()
+
+@app.route("/internal", methods=["POST"])
+@jwt_required()
+def handle_internal_request():
+    checking_jwt = get_jwt()
+    if checking_jwt.get("scope") != "cloud":
+        return jsonify(error= "Requires cloud token"), 403
+    sender_info = checking_jwt.get("sender")
+
+    data = request.get_json(silent=True) or {}
+    current_user = get_jwt_identity()
+    action = data.get("action", "")
+    post_id = data.get("post_id", "")
+    text = ""
+    if "text" in data: 
+        if data.get("text", "") is not None:
+            text = data.get("text", "")
+    reaction_text = ""
+    if "reaction_text" in data: 
+        if data.get("reaction_text", "") is not None:
+            reaction_text = data.get("reaction_text", "")
+        
+    if action == "like":
+        interaction = like_post(post_id=post_id, account_id= current_user, synced_from=sender_info)
+        if interaction.error_message:
+            return jsonify(message=interaction.error_message)
+    elif action == "comment":
+        interaction = comment_post(post_id=post_id, account_id= current_user, text=text, synced_from=sender_info)
+        if interaction.error_message:
+            return jsonify(message=interaction.error_message)
+    elif action == "reaction":
+        interaction = react_post(post_id=post_id, account_id= current_user, reaction_text=reaction_text, synced_from=sender_info)
+        if interaction.error_message:
+            return jsonify(message=interaction.error_message)
+    else:
+        return jsonify(message="Wrong interaction format")
+
+    return jsonify(message='Saved on Server_X')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

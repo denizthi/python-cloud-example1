@@ -36,6 +36,7 @@ class CommentsY(Base):
     time_commented = Column(DateTime(timezone=True),
                             server_default=func.now(), nullable=False)
     text = Column(Text, nullable=False)
+    synced_from = Column(Text)
 
     post = relationship("PostsY", back_populates="comments")
 
@@ -49,6 +50,7 @@ class LikesY(Base):
     account_id = Column(UUID(as_uuid=True), nullable=False)
     time_liked = Column(DateTime(timezone=True),
                         server_default=func.now(), nullable=False)
+    synced_from = Column(Text)
 
     post = relationship("PostsY", back_populates="likes")
 
@@ -64,5 +66,6 @@ class ReactionsY(Base):
     time_reaction = Column(DateTime(timezone=True),
                            server_default=func.now(), nullable=False)
     reaction_text = Column(Text, nullable=False)
+    synced_from = Column(Text)
 
     post = relationship("PostsY", back_populates="reactions")
