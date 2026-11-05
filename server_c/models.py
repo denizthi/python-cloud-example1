@@ -5,7 +5,6 @@ from sqlalchemy import  Column, String, Text, Integer, UniqueConstraint, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from database import Base
-from sqlalchemy.orm import relationship
 
 class Account(Base):
     __tablename__ = "accounts"

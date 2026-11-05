@@ -6,7 +6,7 @@ import requests
 from flask import Flask, request, jsonify
 from database import SessionLocal
 from dotenv import load_dotenv
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token, create_refresh_token, decode_token, get_jwt
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, get_jwt
 from models import PostsX, LikesX, CommentsX
 from config import SERVER_C_URL
 from interactions import like_post, comment_post, react_post, create_post

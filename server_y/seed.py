@@ -15,8 +15,5 @@ def seed_data():
 
     print("Data seeded successfully.")
 
-def create_user(user: USerModel) -> UserModel:
-    pass
-
 if __name__ == "__main__":
     seed_data()
