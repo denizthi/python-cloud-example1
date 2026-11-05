@@ -20,5 +20,7 @@ MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
 MAIL_DEFAULT_SENDER = "no-reply@demomailtrap.co"
 
 JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)
+JWT_REFRESH_TOKEN_EXPIRES = timedelta(hours=3)
+
 X_URL = os.getenv("x_url")
 Y_URL = os.getenv("y_url")

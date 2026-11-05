@@ -2,6 +2,7 @@ import jwt as pyjwt
 import requests 
 from flask import Flask, request, jsonify
 from database import SessionLocal
+from datetime import timedelta
 
 from email_verif import confirm_token
 from user_services import create_user, login
@@ -57,7 +58,8 @@ def logged_user():
     email = credentials.get("email", "")
     password = credentials.get("password", "")
     sender_info = credentials.get("sender", "")
-
+    if not sender_info:
+        sender_info = "cloud"
     user = login(email, password)
     if user.has_error():
         return jsonify(message=user.error_message), 401
@@ -65,10 +67,37 @@ def logged_user():
     app_claims = {"scope": "application", "sender": sender_info}
     cloud_claims = {"scope": "cloud", "sender": sender_info}
 
-    app_token = create_access_token(identity=user.account_id, additional_claims=app_claims)
-    cloud_token = create_access_token(identity=user.account_id, additional_claims=cloud_claims)
+    app_token = create_access_token(identity=user.account_id, fresh=True, additional_claims=app_claims)
+    app_refresh_token = create_refresh_token(identity=user.account_id, additional_claims=app_claims)
+    cloud_token = create_access_token(identity=user.account_id, fresh=True, additional_claims=cloud_claims)
+    cloud_refresh_token = create_refresh_token(identity=user.account_id, additional_claims=cloud_claims)
 
-    return jsonify(message="Login successful", app_token=app_token, cloud_token=cloud_token), 200
+    return jsonify(message="Login successful", app_token=app_token, cloud_token=cloud_token, app_refresh_token=app_refresh_token, cloud_refresh_token=cloud_refresh_token), 200
+
+@app.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh_user():
+    current_user = get_jwt_identity()
+    current_jwt = get_jwt()
+    sender_info = current_jwt.get("sender", "")
+    app_claims = {"scope": "application", "sender": sender_info}
+    cloud_claims = {"scope": "cloud", "sender": sender_info}
+
+    new_app_token = ""
+    new_cloud_token = ""
+    expires_delta = timedelta(hours=3)
+    if current_jwt.get("scope") == "cloud":
+        new_cloud_token = create_access_token(identity=current_user, fresh=False, expires_delta=expires_delta, additional_claims=cloud_claims)
+        refreshed_token = "cloud_token"
+        r = jsonify(refreshed_token=refreshed_token, token=new_cloud_token)
+    elif current_jwt.get("scope") == "application":
+        new_app_token = create_access_token(identity=current_user, fresh=False, expires_delta=expires_delta, additional_claims=app_claims)
+        refreshed_token = "application_token"  
+        r = jsonify(refreshed_token=refreshed_token, token=new_app_token)
+    else:
+        return jsonify(message="Wrong scope, token not refreshed") 
+
+    return r, 200
 
 @app.route('/sync', methods=['POST'])
 @jwt_required()
