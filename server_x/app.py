@@ -58,7 +58,7 @@ def refresh_token():
     except requests.RequestException:
         return jsonify(error="Cannot reach Server C")
         
-    return r.json()
+    return r.json(), 200
 
 @app.route("/posts", methods=["GET"])
 @jwt_required()
@@ -154,7 +154,7 @@ def react_a_post():
 
     return jsonify(message='Reaction saved')
 
-@app.route("/new_endpoint_going_to_y", methods=["POST"])
+@app.route("/interact_other_platform", methods=["POST"])
 @jwt_required()
 def request_cloud():
     checking_jwt = get_jwt()

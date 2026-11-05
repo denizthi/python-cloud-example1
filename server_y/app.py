@@ -48,12 +48,17 @@ def login():
         
     return r.json()
 
-@app.route('/refresh', methods=['POST'])
+@app.route("/refresh", methods=["POST"])
 @jwt_required(refresh=True)
-def refresh_user():
-    current_user = get_jwt_identity()
-    new_access_token = create_access_token(identity=current_user, fresh=False)
-    return jsonify(access_token=new_access_token), 200
+def refresh_token():
+    header_auth = request.headers.get("Authorization")
+    headers = {"Authorization": header_auth}
+    try:
+        r = requests.post((str(SERVER_C_URL) + "/refresh"), headers=headers)
+    except requests.RequestException:
+        return jsonify(error="Cannot reach Server C")
+        
+    return r.json(), 200
 
 @app.route("/posts", methods=["GET"])
 @jwt_required()
@@ -149,7 +154,7 @@ def react_a_post():
 
     return jsonify(message='Reaction saved')
 
-@app.route("/new_endpoint_going_to_x", methods=["POST"])
+@app.route("/interact_other_platform", methods=["POST"])
 @jwt_required()
 def request_cloud():
     checking_jwt = get_jwt()
